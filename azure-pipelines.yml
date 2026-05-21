@@ -1,0 +1,32 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
+    wget -O- https://hashicorp.com | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    sudo apt-get update && sudo apt-get install terraform
+  displayName: 'Install'
+
+- task: AzureCLI@2
+  displayName: 'Launch, Wait, and Delete'
+  inputs:
+    azureSubscription: 'MyAzureServiceConnection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      # 1. Initialize and launch the VM
+      terraform init
+      terraform apply -auto-approve
+      
+      # 2. Wait for 4 minutes (240 seconds)
+      echo "VM launched successfully. Waiting 4 minutes before deleting..."
+      sleep 240
+      
+      # 3. Automatically delete the VM and resource group
+      echo "4 minutes finished. Deleting resources now..."
+      terraform destroy -auto-approve
