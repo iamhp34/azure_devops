@@ -5,7 +5,6 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # PASTE YOUR AZURE PLAIN TEXT CREDENTIALS HERE
   AZURE_CLIENT_ID: 'your-app-client-id'
   AZURE_CLIENT_SECRET: 'your-app-secret-value'
   AZURE_TENANT_ID: 'your-tenant-id'
@@ -20,21 +19,19 @@ steps:
   displayName: 'Install Terraform'
 
 - script: |
-    # Force Terraform to use the environment variables for authentication
     export ARM_CLIENT_ID="$(AZURE_CLIENT_ID)"
     export ARM_CLIENT_SECRET="$(AZURE_CLIENT_SECRET)"
     export ARM_TENANT_ID="$(AZURE_TENANT_ID)"
     export ARM_SUBSCRIPTION_ID="$(AZURE_SUBSCRIPTION_ID)"
-    
-    # 1. Initialize and Launch the Child Module VM
+
     terraform init
-    terraform apply -auto-approve
-    
-    # 2. Wait 4 minutes
-    echo "VM launched successfully! Waiting 4 minutes before automatic deletion..."
+    terraform validate
+    terraform plan -out=tfplan
+    terraform apply -auto-approve tfplan
+
+    echo "VM live! Waiting 4 minutes..."
     sleep 240
-    
-    # 3. Destroy and clean up
-    echo "4 minutes are up. Deleting everything now..."
+
+    echo "Destroying now..."
     terraform destroy -auto-approve
-  displayName: 'Bypass Login and Run Terraform'
+  displayName: 'Run Terraform'
