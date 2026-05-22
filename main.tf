@@ -1,3 +1,5 @@
+# ./main.tf
+
 terraform {
   required_providers {
     azurerm = {
@@ -13,7 +15,7 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "rg-pipeline-demo"
-  location = "East US"
+  location = "centralindia" 
 }
 
 module "my_vm" {
