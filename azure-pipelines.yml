@@ -1,37 +1,52 @@
 trigger:
-  - main
+  - master
 
 pool:
   vmImage: 'ubuntu-latest'
 
+# Updated with your new Azure Service Principal Identifiers
 variables:
-  AZURE_CLIENT_ID: 'your-app-client-id'
-  AZURE_CLIENT_SECRET: 'your-app-secret-value'
-  AZURE_TENANT_ID: 'your-tenant-id'
-  AZURE_SUBSCRIPTION_ID: 'your-subscription-id'
+  AZURE_CLIENT_ID: 'e4802295-2c9f-4aa3-bd66-814307aa67ee'
+  AZURE_TENANT_ID: 'fc5ac670-62be-4b2f-aa87-cb40e168f2f4'
+  AZURE_SUBSCRIPTION_ID: 'c79aaf50-4ed8-4770-bc39-db01fc6efb42'
 
 steps:
 - script: |
+    echo "Installing Terraform..."
     wget -q https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
     unzip terraform_1.7.5_linux_amd64.zip
     sudo mv terraform /usr/local/bin/
-    terraform version
   displayName: 'Install Terraform'
 
 - script: |
+    # Mapping variables directly into environment variables Terraform expects
     export ARM_CLIENT_ID="$(AZURE_CLIENT_ID)"
-    export ARM_CLIENT_SECRET="$(AZURE_CLIENT_SECRET)"
+    export ARM_CLIENT_SECRET="$SYSTEM_SECRET"
     export ARM_TENANT_ID="$(AZURE_TENANT_ID)"
     export ARM_SUBSCRIPTION_ID="$(AZURE_SUBSCRIPTION_ID)"
 
+    echo "Initializing configuration..."
     terraform init
+
+    echo "Validating code syntax..."
     terraform validate
+
+    echo "Generating execution design plan..."
     terraform plan -out=tfplan
+
+    echo "Deploying infrastructure..."
     terraform apply -auto-approve tfplan
 
-    echo "VM live! Waiting 4 minutes..."
-    sleep 240
+    echo "========================================================"
+    echo "Deployment successful! Sleeping for 5 minutes (300s)..."
+    echo "========================================================"
+    sleep 300
 
-    echo "Destroying now..."
+    echo "========================================================"
+    echo "Time window expired. Tearing down all resources now..."
+    echo "========================================================"
     terraform destroy -auto-approve
-  displayName: 'Run Terraform'
+  displayName: 'Terraform Plan, Apply, Wait 5 Mins, and Destroy'
+  env:
+    # Safely injects the secret value from your pipeline variables 
+    SYSTEM_SECRET: $(AZURE_SECRET_SECURE)
